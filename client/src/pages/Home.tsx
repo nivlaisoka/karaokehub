@@ -17,7 +17,8 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/rooms", {
+      const serverUrl = import.meta.env.VITE_SERVER_URL || "";
+      const res = await fetch(`${serverUrl}/api/rooms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostName: hostName.trim() }),
