@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useSocket } from "../useSocket";
-import YouTubePlayer, { type YouTubePlayerHandle } from "../components/YouTubePlayer";
+import VideoPlayer, { type VideoPlayerHandle } from "../components/VideoPlayer";
 import RoomSettings from "../components/RoomSettings";
 import RoomQR from "../components/RoomQR";
 import {
@@ -33,7 +33,7 @@ export default function Host() {
   const [playerErrorVideoId, setPlayerErrorVideoId] = useState<string | null>(null);
   const [mutedRetry, setMutedRetry] = useState(false);
   const [mutedKey, setMutedKey] = useState(0);
-  const playerRef = useRef<YouTubePlayerHandle>(null);
+  const playerRef = useRef<VideoPlayerHandle>(null);
   const searchTimer = useRef<any>(null);
   const cheerTimer = useRef<any>(null);
 
@@ -178,7 +178,7 @@ export default function Host() {
                     </div>
                   </div>
                 ) : (
-                  <YouTubePlayer key={mutedKey} ref={playerRef} videoId={nowPlaying.song.videoId} onEnd={() => playNext()} onError={(id) => setPlayerErrorVideoId(id)} muted={mutedRetry} />
+                  <VideoPlayer key={mutedKey} ref={playerRef} videoId={nowPlaying.song.videoId} onEnd={() => playNext()} onError={(id) => setPlayerErrorVideoId(id)} muted={mutedRetry} />
                 )}
               </div>
                 <div className="flex items-center justify-between mt-3 px-1">

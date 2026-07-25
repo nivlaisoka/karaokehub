@@ -5,6 +5,7 @@ import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 
 
 const app = express();
@@ -17,7 +18,6 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 3001;
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIR = process.env.CLIENT_DIR
   ? path.resolve(process.env.CLIENT_DIR)
@@ -125,16 +125,64 @@ async function searchYouTube(query: string): Promise<Song[]> {
   return items.slice(0, 15);
 }
 
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyCaAMuSunruC6zCXAv8kgVAHE8WH1w3BGk";
+
+async function filterEmbeddable(songs: Song[]): Promise<Song[]> {
+  if (!YOUTUBE_API_KEY || songs.length === 0) return songs;
+  const ids = songs.map((s) => s.videoId).join(",");
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=status&id=${ids}&key=${YOUTUBE_API_KEY}`;
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) return songs;
+    const data: any = await apiRes.json();
+    const embeddable = new Set<string>();
+    if (data.items) {
+      for (const item of data.items) {
+        if (item.status?.embeddable) {
+          embeddable.add(item.id);
+        }
+      }
+    }
+    return songs.filter((s) => embeddable.has(s.videoId));
+  } catch {
+    return songs;
+  }
+}
+
 app.get("/api/search/songs", async (req, res) => {
   const query = req.query.q as string;
   if (!query) return res.json({ songs: [] });
 
   try {
-    const songs = await searchYouTube(query);
+    let songs = await searchYouTube(query);
+    songs = await filterEmbeddable(songs);
     return res.json({ songs });
   } catch (err) {
     console.error("search error:", err);
     return res.json({ songs: [] });
+  }
+});
+
+const videoUrlCache = new Map<string, { url: string; ts: number }>();
+const CACHE_TTL = 3_600_000; // 1 hour
+
+app.get("/api/video/url/:videoId", (req, res) => {
+  const { videoId } = req.params;
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return res.status(400).json({ error: "invalid videoId" });
+
+  const cached = videoUrlCache.get(videoId);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) return res.json({ url: cached.url });
+
+  try {
+    const url = execSync(
+      `yt-dlp -f "best[height<=720][ext=mp4]/best[height<=720]" --get-url "https://www.youtube.com/watch?v=${videoId}"`,
+      { timeout: 15000, encoding: "utf-8" }
+    ).trim();
+    videoUrlCache.set(videoId, { url, ts: Date.now() });
+    return res.json({ url });
+  } catch (err: any) {
+    console.error("yt-dlp error:", err.stderr || err.message);
+    return res.status(502).json({ error: "failed to get video url" });
   }
 });
 

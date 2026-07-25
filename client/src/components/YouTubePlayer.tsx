@@ -122,7 +122,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, onEnd, 
     return () => {
       if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
       if (playerRef.current) {
-        try { playerRef.current.destroy(); } catch {}
+        try { playerRef.current.stopVideo(); } catch {}
+        try { if (container?.isConnected) playerRef.current.destroy(); } catch {}
         playerRef.current = null;
       }
     };
