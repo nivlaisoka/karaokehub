@@ -18,6 +18,8 @@ interface Song {
   duration?: string;
 }
 
+const API_URL = import.meta.env.VITE_SERVER_URL || "";
+
 export default function Host() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
@@ -75,7 +77,7 @@ export default function Host() {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/search/songs?q=${encodeURIComponent(search)}`);
+        const res = await fetch(`${API_URL}/api/search/songs?q=${encodeURIComponent(search)}`);
         const data = await res.json();
         setResults(data.songs || []);
       } catch { setResults([]); }

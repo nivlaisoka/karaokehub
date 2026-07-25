@@ -12,6 +12,8 @@ interface Song {
   duration?: string;
 }
 
+const API_URL = import.meta.env.VITE_SERVER_URL || "";
+
 export default function Guest() {
   const { code } = useParams<{ code: string }>();
   const [searchParams] = useSearchParams();
@@ -70,7 +72,7 @@ function GuestContent({ code, guestName }: { code: string; guestName: string }) 
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/search/songs?q=${encodeURIComponent(search)}`);
+        const res = await fetch(`${API_URL}/api/search/songs?q=${encodeURIComponent(search)}`);
         const data = await res.json();
         setResults(data.songs || []);
       } catch { setResults([]); }

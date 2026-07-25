@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import QRScanner from "../components/QRScanner";
 import { Mic2, Play, Users, QrCode, Music } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_SERVER_URL || "";
+
 export default function Home() {
   const navigate = useNavigate();
   const [hostName, setHostName] = useState("");
@@ -17,7 +19,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/rooms", {
+      const res = await fetch(`${API_URL}/api/rooms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostName: hostName.trim() }),
