@@ -16,7 +16,7 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIR = process.env.CLIENT_DIR
