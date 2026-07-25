@@ -80,6 +80,28 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+async function filterEmbeddable(songs: Song[]): Promise<Song[]> {
+  if (!YOUTUBE_API_KEY || songs.length === 0) return songs;
+  const ids = songs.map((s) => s.videoId).join(",");
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=status&id=${ids}&key=${YOUTUBE_API_KEY}`;
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) return songs;
+    const data: any = await apiRes.json();
+    const embeddable = new Set<string>();
+    if (data.items) {
+      for (const item of data.items) {
+        if (item.status?.embeddable) {
+          embeddable.add(item.id);
+        }
+      }
+    }
+    return songs.filter((s) => embeddable.has(s.videoId));
+  } catch {
+    return songs;
+  }
+}
+
 app.get("/api/search/songs", async (req, res) => {
   const query = req.query.q as string;
   if (!query) return res.json({ songs: [] });
@@ -87,7 +109,7 @@ app.get("/api/search/songs", async (req, res) => {
   try {
     const results = await ytSearch(query);
     const videos = (results.videos || []).slice(0, 15);
-    const songs: Song[] = videos.map((v: any) => ({
+    let songs: Song[] = videos.map((v: any) => ({
       id: uuidv4(),
       title: v.title || "Unknown",
       artist: v.author?.name || "Unknown",
@@ -95,6 +117,7 @@ app.get("/api/search/songs", async (req, res) => {
       videoId: v.videoId,
       thumbnail: `https://i.ytimg.com/vi/${v.videoId}/default.jpg`,
     }));
+    songs = await filterEmbeddable(songs);
     return res.json({ songs });
   } catch (err) {
     console.error("yt-search error:", err);
