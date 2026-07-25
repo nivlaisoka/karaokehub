@@ -5,7 +5,7 @@ import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { fileURLToPath } from "url";
-import { search as ytSearch } from "yt-search";
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -80,26 +80,49 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-async function filterEmbeddable(songs: Song[]): Promise<Song[]> {
-  if (!YOUTUBE_API_KEY || songs.length === 0) return songs;
-  const ids = songs.map((s) => s.videoId).join(",");
-  try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=status&id=${ids}&key=${YOUTUBE_API_KEY}`;
-    const apiRes = await fetch(url);
-    if (!apiRes.ok) return songs;
-    const data: any = await apiRes.json();
-    const embeddable = new Set<string>();
-    if (data.items) {
-      for (const item of data.items) {
-        if (item.status?.embeddable) {
-          embeddable.add(item.id);
-        }
-      }
+function parseDuration(text: string): string {
+  if (!text) return "0:00";
+  const parts = text.split(":").map(Number);
+  if (parts.length === 3) return `${parts[0] * 60 + parts[1]}:${String(parts[2]).padStart(2, "0")}`;
+  if (parts.length === 2) return `${parts[0]}:${String(parts[1]).padStart(2, "0")}`;
+  return text;
+}
+
+async function searchYouTube(query: string): Promise<Song[]> {
+  const html = await fetch(
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&hl=en`,
+    { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } }
+  ).then((r) => r.text());
+
+  const match = html.match(/ytInitialData\s*=\s*({.*?});\s*<\/script>/);
+  if (!match) return [];
+
+  const data = JSON.parse(match[1]);
+  const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+  const items: any[] = [];
+
+  for (const section of contents) {
+    const results = section?.itemSectionRenderer?.contents || [];
+    for (const item of results) {
+      const video = item?.videoRenderer;
+      if (!video) continue;
+      const id = video.videoId;
+      if (!id) continue;
+      const title = video.title?.runs?.[0]?.text || video.title?.simpleText || "";
+      const author = video.ownerText?.runs?.[0]?.text || "Unknown";
+      const length = video.lengthText?.simpleText || "";
+      const thumb = video.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${id}/default.jpg`;
+      items.push({
+        id: uuidv4(),
+        title,
+        artist: author,
+        duration: parseDuration(length),
+        videoId: id,
+        thumbnail: thumb,
+      });
     }
-    return songs.filter((s) => embeddable.has(s.videoId));
-  } catch {
-    return songs;
   }
+  return items.slice(0, 15);
 }
 
 app.get("/api/search/songs", async (req, res) => {
@@ -107,20 +130,10 @@ app.get("/api/search/songs", async (req, res) => {
   if (!query) return res.json({ songs: [] });
 
   try {
-    const results = await ytSearch(query);
-    const videos = (results.videos || []).slice(0, 15);
-    let songs: Song[] = videos.map((v: any) => ({
-      id: uuidv4(),
-      title: v.title || "Unknown",
-      artist: v.author?.name || "Unknown",
-      duration: formatDuration(v.duration?.seconds || v.seconds || 0),
-      videoId: v.videoId,
-      thumbnail: `https://i.ytimg.com/vi/${v.videoId}/default.jpg`,
-    }));
-    songs = await filterEmbeddable(songs);
+    const songs = await searchYouTube(query);
     return res.json({ songs });
   } catch (err) {
-    console.error("yt-search error:", err);
+    console.error("search error:", err);
     return res.json({ songs: [] });
   }
 });
