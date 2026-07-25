@@ -51,6 +51,12 @@ export default function Host() {
     }
   }, [playerErrorVideoId, mutedRetry]);
 
+  const retryPlayer = () => {
+    setMutedRetry(false);
+    setMutedKey((k) => k + 1);
+    setPlayerErrorVideoId(null);
+  };
+
   useEffect(() => {
     if (!socket) return;
     const handler = () => {
@@ -165,6 +171,9 @@ export default function Host() {
                       </a>
                       <button onClick={() => playNext()} className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors">
                         <SkipForward size="13" /> Skip
+                      </button>
+                      <button onClick={retryPlayer} className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors">
+                        <Play size="13" /> Retry
                       </button>
                     </div>
                   </div>

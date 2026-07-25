@@ -64,7 +64,7 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, onEnd, 
       if (!startedRef.current) {
         onErrorRef.current?.(videoId);
       }
-    }, 10000);
+    }, 20000);
 
     const apiReady = () => {
       if (playerRef.current) {
@@ -96,7 +96,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, onEnd, 
               if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
             }
           },
-          onError: () => {
+          onError: (e: { data: number }) => {
+            console.warn(`YT player error (videoId=${videoId}) code=${e.data}`);
             onErrorRef.current?.(videoId);
           },
         },
