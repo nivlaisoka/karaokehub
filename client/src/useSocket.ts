@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "";
-
 export function useSocket(code: string, guestName?: string, isHost?: boolean) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -15,7 +13,7 @@ export function useSocket(code: string, guestName?: string, isHost?: boolean) {
   const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ["websocket", "polling"] });
+    const socket = io({ transports: ["websocket", "polling"] });
     socketRef.current = socket;
     setConnecting(true);
     setJoinError(null);
