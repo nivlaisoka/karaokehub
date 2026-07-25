@@ -93,32 +93,60 @@ export default function Host() {
   return (
     <div className="h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-card border-b border-border/50 px-4 py-3 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground p-1 transition-colors">
-            <ArrowLeft size="20" />
-          </button>
-          <Mic2 size="22" className="text-primary" />
-          <div>
-            <h1 className="font-bold text-sm">AGZ VIDEOKE</h1>
-            <span className="text-primary font-mono text-xs tracking-widest">Room: {code}</span>
+      <header className="bg-card border-b border-border/50 px-4 py-2 shrink-0 z-20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground p-1 transition-colors shrink-0">
+              <ArrowLeft size="18" />
+            </button>
+            <Mic2 size="18" className="text-primary shrink-0" />
+            <div className="min-w-0">
+              <h1 className="font-bold text-xs leading-tight">AGZ VIDEOKE</h1>
+              <span className="text-primary font-mono text-[10px] tracking-widest">Room: {code}</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-muted-foreground text-sm">
-            <Users size="16" />
-            <span>{guests.length}</span>
+          {nowPlaying && (
+            <div className="flex items-center gap-2 min-w-0 px-2 mx-2 border-x border-border/30 max-w-[40%]">
+              <p className="text-xs font-medium truncate text-foreground/90">{nowPlaying.song.title}</p>
+              <span className="text-muted-foreground/50 hidden sm:inline">·</span>
+              <span className="text-muted-foreground/60 text-[10px] hidden sm:block truncate">{nowPlaying.song.artist}</span>
+              {nowPlaying.song.duration && nowPlaying.song.duration !== "0:00" && (
+                <span className="text-muted-foreground/60 text-[10px] shrink-0 hidden sm:flex items-center gap-0.5">
+                  <Clock size="9" />{nowPlaying.song.duration}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {nowPlaying && (
+              <>
+                <button
+                  onClick={() => { isPlaying ? playerRef.current?.pause() : playerRef.current?.play(); setIsPlaying(!isPlaying); }}
+                  className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors"
+                  title={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? <Pause size="12" /> : <Play size="12" />}
+                </button>
+                <button onClick={() => playNext()} className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground border border-border/50 transition-colors" title="Skip">
+                  <SkipForward size="12" />
+                </button>
+              </>
+            )}
+            <div className="flex items-center gap-1 text-muted-foreground text-xs ml-1">
+              <Users size="14" />
+              <span>{guests.length}</span>
+            </div>
+            {cheers.map((t) => (
+              <span key={t} className="text-primary animate-bounce text-xs">🎉</span>
+            ))}
+            <button onClick={() => setShowQR(true)} className="text-muted-foreground hover:text-foreground p-1 transition-colors" title="Show QR code">
+              <QrCode size="16" />
+            </button>
+            <button onClick={() => setShowSettings(true)} className="text-muted-foreground hover:text-foreground p-1 transition-colors">
+              <Settings size="16" />
+            </button>
+            <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-primary" : "bg-destructive"}`} />
           </div>
-          {cheers.map((t) => (
-            <span key={t} className="text-primary animate-bounce text-sm">🎉</span>
-          ))}
-          <button onClick={() => setShowQR(true)} className="text-muted-foreground hover:text-foreground p-1 transition-colors" title="Show QR code">
-            <QrCode size="18" />
-          </button>
-          <button onClick={() => setShowSettings(true)} className="text-muted-foreground hover:text-foreground p-1 transition-colors">
-            <Settings size="18" />
-          </button>
-          <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-primary" : "bg-destructive"}`} />
         </div>
       </header>
 
@@ -181,45 +209,6 @@ export default function Host() {
                   <VideoPlayer key={mutedKey} ref={playerRef} videoId={nowPlaying.song.videoId} onEnd={() => playNext()} onError={(id) => setPlayerErrorVideoId(id)} muted={mutedRetry} />
                 )}
               </div>
-                <div className="flex items-center justify-between mt-3 px-1">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-foreground truncate">{nowPlaying.song.title}</p>
-                    <p className="text-muted-foreground text-xs truncate mt-0.5">
-                      {nowPlaying.song.artist}
-                    {nowPlaying.song.duration && nowPlaying.song.duration !== "0:00" && (
-                      <span className="ml-2 text-muted-foreground/60"><Clock size="10" className="inline" /> {nowPlaying.song.duration}</span>
-                    )}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => { isPlaying ? playerRef.current?.pause() : playerRef.current?.play(); setIsPlaying(!isPlaying); }}
-                    className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-secondary text-muted-foreground hover:text-foreground border border-border/50"
-                    title={isPlaying ? "Pause" : "Play"}
-                  >
-                    {isPlaying ? <Pause size="13" /> : <Play size="13" />}
-                  </button>
-                  <button
-                    onClick={() => window.open(`https://www.youtube.com/watch?v=${nowPlaying.song.videoId}`, "yt-popup", "width=400,height=300,menubar=no,toolbar=no,location=no,status=no")}
-                    className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-secondary text-muted-foreground hover:text-foreground border border-border/50"
-                    title="Popout player"
-                  >
-                    <ExternalLink size="13" />
-                  </button>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${nowPlaying.song.videoId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground p-1.5 transition-colors"
-                    title="Open in YouTube"
-                  >
-                    <ExternalLink size="16" />
-                  </a>
-                  <button onClick={() => playNext()} className="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors bg-secondary text-muted-foreground hover:text-foreground border border-border/50">
-                    Skip <SkipForward size="12" />
-                  </button>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">
@@ -241,7 +230,7 @@ export default function Host() {
         </div>
 
         {/* Right panel - Queue / Search */}
-        <div className="w-80 lg:w-96 xl:w-[28rem] border-l border-border/50 bg-card/30 flex flex-col min-h-0 hidden md:flex">
+        <div className="w-64 lg:w-72 xl:w-80 border-l border-border/50 bg-card/30 flex flex-col min-h-0 hidden md:flex">
           {/* Panel header tabs */}
           <div className="flex border-b border-border/50 shrink-0">
             <button
